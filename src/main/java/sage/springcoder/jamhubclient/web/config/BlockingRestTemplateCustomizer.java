@@ -13,6 +13,7 @@ import org.apache.hc.client5.http.impl.DefaultConnectionKeepAliveStrategy;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateCustomizer;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
@@ -25,13 +26,25 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class BlockingRestTemplateCustomizer implements RestTemplateCustomizer {
 
+    private final Integer maxTotalConections;
+    private final Integer defaultMaxPerRoute;
+    private final Long connectionRequestTimeout;
+
+    public BlockingRestTemplateCustomizer(@Value("${jamhub.maxTotalConections}") Integer maxTotalConections,
+                                          @Value("${jamhub.defaultMaxPerRoute}") Integer defaultMaxPerRoute,
+                                          @Value("${jamhub.connectionRequestTimeout}") Long connectionRequestTimeout) {
+        this.maxTotalConections = maxTotalConections;
+        this.defaultMaxPerRoute = defaultMaxPerRoute;
+        this.connectionRequestTimeout= connectionRequestTimeout;
+    }
+
     public ClientHttpRequestFactory clientHttpRequestFactory() {
         PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
-        connectionManager.setMaxTotal(100);
-        connectionManager.setDefaultMaxPerRoute(20);
+        connectionManager.setMaxTotal(maxTotalConections);
+        connectionManager.setDefaultMaxPerRoute(defaultMaxPerRoute);
 
         RequestConfig requestConfig = RequestConfig.custom()
-                .setConnectionRequestTimeout(3000L, TimeUnit.MILLISECONDS)
+                .setConnectionRequestTimeout(connectionRequestTimeout, TimeUnit.MILLISECONDS)
                 // .setSocketTimeout(3000)
                 .build();
 
